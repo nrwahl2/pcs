@@ -1219,13 +1219,14 @@ def map_for_error_list(callab, iterab):
             error_list.append(err)
     return error_list
 
-def run_parallel(worker_list, wait_seconds=1):
+def run_parallel(worker_list, wait_seconds=1, delay_seconds=0):
     thread_list = []
     for worker in worker_list:
         thread = threading.Thread(target=worker)
         thread.daemon = True
         thread.start()
         thread_list.append(thread)
+        time.sleep(delay_seconds)
 
     while thread_list:
         for thread in thread_list:
@@ -1245,6 +1246,7 @@ def create_task_list(report, action, node_list, *args, **kwargs):
     ]
 
 def parallel_for_nodes(action, node_list, *args, **kwargs):
+    delay_seconds = kwargs.pop('delay', 0)
     node_errors = dict()
     def report(node, returncode, output):
         message = '{0}: {1}'.format(node, output.strip())
@@ -1252,7 +1254,8 @@ def parallel_for_nodes(action, node_list, *args, **kwargs):
         if returncode != 0:
             node_errors[node] = message
     run_parallel(
-        create_task_list(report, action, node_list, *args, **kwargs)
+        create_task_list(report, action, node_list, *args, **kwargs),
+        delay_seconds=delay_seconds
     )
     return node_errors
 
